@@ -1,0 +1,68 @@
+{% from "macros.html" import csrf %}
+
+{% set me = request.state.user %}
+{% set is_self = (u.id == me.id) %}
+{% set manager = can_manage_users %}
+
+<article class="card" id="user-{{ u.id }}">
+    <section class="card-body">
+        <p>
+            <b>{{ u.username }}</b>
+            {% if u.is_owner %}<span class="text-muted">(Владелец)</span>{% endif %}
+            {% if is_self %}<span class="text-muted">(Это вы)</span>{% endif %}
+        </p>
+
+        <p>Telegram ID: {{ u.telegram_id or '—' }}</p>
+
+        <p>
+            Доступ к инстансам:
+            {% if u.full_access %}
+                <i>все</i>
+            {% else %}
+                {% for inst in u.instances %}
+                    {{ inst.api_id }}{% if not loop.last %}, {% endif %}
+                {% else %}
+                    — нет —
+                {% endfor %}
+            {% endif %}
+        </p>
+    </section>
+
+    {# ‒‒‒ кнопки (редакт/удалить/разлогинить) ‒‒‒ #}
+    <footer class="card-foot">
+        <div class="btn-row">
+            {% if (manager and not u.is_owner) or is_self %}
+            <a class="btn"
+               hx-get="/users/{{ u.id }}/edit"
+               hx-target="#user-{{ u.id }}"
+               hx-swap="outerHTML"
+               hx-headers='{"X-CSRF":"{{ request.state.csrf }}"}'>
+                Редактировать
+            </a>
+            {% endif %}
+
+            {# удалить – только если не сам себе и есть право #}
+            {% if manager and not is_self and not u.is_owner %}
+            <a class="btn danger"
+               hx-delete="/users/{{ u.id }}"
+               hx-confirm="Вы действительно хотите удалить пользователя {{ u.username }}?"
+               hx-target="body"
+               hx-swap="none"
+               hx-headers='{"X-CSRF":"{{ request.state.csrf }}"}'>
+                Удалить
+            </a>
+            {% endif %}
+
+            {% if manager or is_self %}
+            <a class="btn"
+               hx-post="/users/{{ u.id }}/logout_sessions"
+               hx-confirm="Вы действительно хотите разлогинить {{ 'себя' if is_self else ('пользователя '+u.username) }}?"
+               hx-target="body"
+               hx-swap="none"
+               hx-headers='{"X-CSRF":"{{ request.state.csrf }}"}'>
+                Разлогинить
+            </a>
+            {% endif %}
+        </div>
+    </footer>
+</article>

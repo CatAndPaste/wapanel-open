@@ -1,0 +1,897 @@
+:root {
+    --header-background: #202c33; /* header, container backgrounds */
+    --header-item-active: #374248;
+    --header-item-active-hover: #56676e;
+    --header-item: #aebac1;
+    --header-hover: #fef9ee;
+    --background-color: #111b21;
+    --border-color: #374045;
+    --chat-background: #222e35;
+    --input-background: #2a3942;
+    --input-placeholder: #8696a0;
+    --input-color: #bac1c6;
+    --danger-color: #da423c;
+    --danger-color-hover: #c12924;
+    --content-color: #d1d7db;
+    --content-secondary: #aebac1;
+    --button-main: #128c7e;
+    --button-main-hover: #075e54;
+    --button-secondary: #4a90e2;
+    --button-secondary-hover: #357ab7;
+    --accent-color: #21C063;
+    --item-unseen: #00a884;
+    --message-right: #09876c;
+    --message-left: #1c262d;
+    --font-family: 'Inter';
+    --transition-duration: 0.3s;
+}
+
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    margin: 0;
+    width: 100%;
+    overflow-x: hidden;
+}
+
+html {
+    font-size: 1rem;
+    -webkit-text-size-adjust: 100%;
+}
+
+input[type=text],
+input[type=password],
+textarea {
+    font-size: 1rem;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+button,
+.btn {
+    border: none;
+    outline: none;
+}
+
+main {
+    a,
+    a:link {
+        color: var(--accent-color);
+    }
+
+    a:visited {
+        color: var(--accent-color);
+    }
+
+    a:hover,
+    a:focus {
+        color: var(--item-unseen);
+    }
+}
+
+
+/* Базовые стили для body */
+body {
+    font-family: var(--font-family), sans-serif;
+    background-color: var(--background-color);
+    color: var(--content-color);
+    line-height: 1.6;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    min-width: 25rem;
+}
+
+/* Стили для header */
+header {
+    background-color: var(--header-background);
+    border-bottom: 1px solid var(--border-color);
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 3rem;
+}
+
+header h1 {
+    font-size: 1.5rem;
+    color: var(--header-item);
+}
+
+/* Стили для навигации */
+nav ul {
+    list-style: none;
+    display: flex;
+    gap: 1.5rem;
+}
+
+nav a {
+    text-decoration: none;
+    color: var(--header-item);
+    transition: color var(--transition-duration);
+    background: transparent;
+    padding: 0.5rem 1rem;
+    border-radius: 0.2rem;
+}
+
+nav a:hover {
+    color: var(--header-hover);
+}
+
+nav a.active {
+    background: var(--header-item-active);
+
+    &:hover {
+        color: var(--header-item);
+    }
+}
+
+/* Основное содержимое */
+main {
+    flex: 1;
+    padding: 2rem 0;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* Стили для footer */
+footer {
+    background-color: var(#202c33);
+    border-top: 1px solid #e2e8f0;
+    text-align: center;
+    padding: 1rem;
+    font-size: 0.9rem;
+    color: #718096;
+}
+
+/* Стили для форм */
+.auth-form {
+    background: #fff;
+    padding: 2rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    max-width: 400px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.auth-form label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.auth-form input {
+    width: 100%;
+    padding: 0.5rem;
+    margin-bottom: 1rem;
+    border: 1px solid #cbd5e0;
+    border-radius: 4px;
+}
+
+.auth-form button {
+    width: 100%;
+    padding: 0.75rem;
+    border: none;
+    border-radius: 4px;
+    background-color: #4a90e2;
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color var(--transition-duration);
+}
+
+.auth-form button:hover {
+    background-color: #357ab7;
+}
+
+/* Стили для кнопки "Выйти" */
+.btn-danger {
+    background-color: var(--danger-color);
+    color: #fff;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    transition: background-color var(--transition-duration);
+}
+
+.btn-danger:hover {
+    color: #fff;
+    background-color: #c53030;
+}
+
+/* Адаптивность: изменение расположения навигации на мобильных устройствах */
+@media (max-width: 768px) {
+    nav ul {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .emoji-btn {
+        height: 0;
+        display: none;
+    }
+}
+
+
+/* ---------- карточки инстансов ---------- */
+.card {
+    background: var(--chat-background);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.card-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 0.75rem;
+    border-radius: 4px;
+    background-color: var(--header-background);
+}
+
+.card-head__left {
+    display: flex;
+    flex-direction: column;
+}
+
+.card-head__name {
+    font-weight: 600;
+}
+
+.state-dot {
+    width: 0.7rem;
+    height: 0.7rem;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.state-dot.success {
+    background: #21c063;
+}
+
+.state-dot.danger {
+    background: var(--danger-color);
+}
+
+.state-dot.warning {
+    background: #f5c542;
+}
+
+.card-head .api-id {
+    margin-left: auto;
+    font-weight: 600;
+    color: var(--content-secondary);
+}
+
+.card-head .help {
+    font-weight: 700;
+    text-decoration: none;
+    color: var(--content-secondary);
+}
+
+.card-body p {
+    margin-bottom: 0.4rem;
+}
+
+.card-body.secret {
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px dashed var(--border-color);
+    font-size: 0.95rem;
+}
+
+.card-body.secret .sub {
+    font-size: 0.8rem;
+    color: var(--content-secondary);
+}
+
+.card-foot {
+    margin-top: 1rem;
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.btn-row {
+    margin-left: auto;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+/* ---------- кнопки ---------- */
+.btn {
+    background: var(--button-secondary);
+    padding: 0.4rem 0.8rem;
+    border-radius: 4px;
+    text-decoration: none;
+    cursor: pointer;
+    color: var(--content-color) !important;
+    transition: background var(--transition-duration);
+    font-size: 0.9rem;
+}
+
+.btn:hover {
+    color: var(--content-secondary) !important;
+    background: var(--button-secondary-hover);
+}
+
+.btn.main {
+    background: var(--button-main);
+}
+
+.btn.main:hover {
+    background: var(--button-main-hover);
+}
+
+.btn.danger {
+    background: var(--danger-color);
+}
+
+.btn.danger:hover {
+    background: var(--danger-color-hover);
+}
+
+a.disabled {
+    pointer-events: none;
+    opacity: .8;
+    cursor: default;
+}
+
+/* ---------- форма добавления ---------- */
+details.instance-form {
+    margin-right: 1rem;
+    margin-left: 1rem;
+    margin-bottom: 1.5rem;
+    background: var(--chat-background);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 1rem 1.25rem;
+}
+
+details.instance-form summary {
+    cursor: pointer;
+    font-weight: 600;
+    outline: none;
+    user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    -webkit-user-select: none;
+}
+
+details[open] summary {
+    margin-bottom: 1rem;
+}
+
+.form-grid {
+    display: grid;
+    gap: 1rem 2rem;
+}
+
+@media (min-width: 760px) {
+    .form-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.form-grid label {
+    font-size: 0.9rem;
+}
+
+.form-grid input,
+.form-grid textarea {
+    width: 100%;
+    margin: 0.25rem 0 0.75rem;
+    padding: 0.4rem;
+    font-family: var(--font-family), sans-serif;
+    background: var(--input-background);
+    color: var(--input-color);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+}
+
+.hint {
+    display: block;
+    margin-top: -0.5rem;
+    margin-bottom: 0.75rem;
+    font-size: 0.8rem;
+    color: var(--content-secondary);
+}
+
+/* опасный текст */
+.danger {
+    color: var(--danger-color);
+}
+
+.form-row {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    margin-bottom: .75rem;
+}
+
+.switch {
+    height: 0;
+    width: 0;
+    visibility: hidden;
+}
+
+.form-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+/* hide the real checkbox */
+.switch {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+/* style the label into a toggle */
+.form-row label {
+    position: relative;
+    padding-left: 46px; /* space for the switch */
+    cursor: pointer;
+    user-select: none;
+    line-height: 20px;
+    color: var(--content-color);
+}
+
+/* the track */
+.form-row label::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 36px;
+    height: 20px;
+    background: var(--border-color);
+    border-radius: 10px;
+    transition: background var(--transition-duration);
+}
+
+/* the knob */
+.form-row label::after {
+    content: "";
+    position: absolute;
+    left: 2px;
+    top: 2px;
+    width: 16px;
+    height: 16px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform var(--transition-duration);
+}
+
+/* checked state */
+.switch:checked + label::before {
+    background: var(--accent-color);
+}
+
+.switch:checked + label::after {
+    transform: translateX(16px);
+}
+
+textarea {
+    resize: vertical;
+}
+
+.textarea-wrap {
+    position: relative;
+}
+
+.emoji-btn {
+    position: absolute;
+    right: 0.75rem;
+    top: 1rem;
+    background: transparent;
+    border: none;
+    padding: 0;
+    width: 20px;
+    height: 20px;
+    color: var(--input-placeholder);
+    cursor: pointer;
+    font-size: 1.25rem;
+    line-height: 1;
+    transition: color var(--transition-duration);
+}
+
+.emoji-btn:hover,
+.emoji-btn:focus {
+    color: var(--input-color);
+}
+
+emoji-picker {
+    bottom: 10px;
+    right: 10px;
+    z-index: 9999;
+}
+
+emoji-picker[hidden] {
+    display: none;
+}
+
+.form-error {
+    color: var(--danger-color);
+    margin-top: 0.5rem;
+    font-size: 0.85rem;
+}
+
+.text-muted {
+    color: var(--content-secondary);
+}
+
+/* QR */
+
+#qr-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    backdrop-filter: blur(2px);
+}
+
+/* show when not hidden */
+#qr-backdrop:not([hidden]) {
+    display: flex;
+}
+
+#qr-box {
+    background: #202c33;
+    max-width: 400px;
+    width: 90%;
+    padding: 1.5rem;
+    border-radius: .5rem;
+    position: relative;
+    text-align: center;
+    animation: pop .25s ease-out;
+}
+
+@keyframes pop {
+    from {
+        transform: scale(.9);
+        opacity: 0
+    }
+    to {
+        transform: scale(1);
+        opacity: 1
+    }
+}
+
+#qr-close {
+    position: absolute;
+    top: .5rem;
+    right: .5rem;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: #ddd;
+    cursor: pointer;
+}
+
+#qr-content {
+    min-height: 280px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* multi select */
+/* from codepen: https://codepen.io/akshaykumar/pen/PXyEXO OG author: Akshay Kumar */
+select.multiselect {
+    width: 100%;
+    min-width: 280px;
+    background: var(--chat-background);
+    border: 1px solid var(--input-color);
+    border-radius: 4px;
+    overflow-y: auto;
+}
+
+/* ─────────── базовый <option> ─────────── */
+select.multiselect option {
+    position: relative; /* опорный контекст */
+    padding: 8px 8px 8px 28px;
+    font-size: 14px;
+    line-height: 18px;
+    color: var(--input-color);
+    background: var(--chat-background);
+    cursor: pointer;
+}
+
+/* чекбокс слева */
+select.multiselect option::before {
+    content: '';
+    position: absolute;
+    left: 4px;
+    top: 0;
+    bottom: 0;
+    margin: auto;
+    width: 18px;
+    height: 18px;
+    border: 1px solid var(--input-color);
+    border-radius: 2px;
+    background: var(--chat-background);
+    z-index: 1; /* поверх фона ::after */
+}
+
+/* активная галочка */
+select.multiselect option:checked::before {
+    border-color: var(--accent-color);
+    background: var(--accent-color) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='8' viewBox='0 0 10 8'%3E%3Cpath fill='white' d='M3.8 6.4 0 2.6 1.4 1.2l2.4 2.4L8.6 0 10 1.4z'/%3E%3C/svg%3E") no-repeat center/10px;
+}
+
+/* ────────── перекрытие системного Highlight ────────── */
+select.multiselect option:checked {
+    /* color: transparent !important; */
+}
+
+select.multiselect option:checked::after {
+    content: attr(title);
+    position: absolute;
+    inset: 0;
+    padding: 8px 8px 8px 28px;
+    background: var(--input-background);
+    color: var(--input-color);
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* ────────── служебные мелочи ────────── */
+select.multiselect option:focus {
+    background: var(--chat-background) !important;
+    outline: none;
+}
+
+select.multiselect:focus {
+    outline: none;
+}
+
+/* запасные случаи (фокус, Firefox и пр.) */
+select.multiselect:focus option:checked,
+select.multiselect:-moz-focusring option:checked,
+select.multiselect option[selected] {
+    background: var(--input-background) !important;
+}
+
+/* CHAT */
+.chat-wrapper {
+    display: flex;
+    flex-direction: column;
+    height: 100vh; /* во всю высоту вкладки */
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto;
+    border: 1px solid var(--border-color);
+    background: var(--chat-background);
+}
+
+/* список сообщений */
+.chat-feed {
+    display: flex;
+    flex-direction: column-reverse;
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    position: relative;
+}
+
+.chat-feed.loading {
+    overflow: hidden;
+}
+
+/* оверлей-индикатор */
+.chat-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, .55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(2px);
+    z-index: 2; /* поверх пузырей */
+}
+
+.chat-overlay.hidden {
+    display: none
+}
+
+/* пузырьки */
+.msg {
+    max-width: 66%;
+    margin: .25rem 0;
+    padding: .75rem 1rem;
+    border-radius: 1rem;
+    font-size: .95rem;
+    line-height: 1.4;
+    word-break: break-word;
+}
+
+.msg-left {
+    background: var(--message-left);
+    color: var(--content-color);
+    border-bottom-left-radius: 0
+}
+
+.msg-right {
+    background: var(--message-right);
+    color: var(--content-color);
+    margin-left: auto;
+    border-bottom-right-radius: 0
+}
+
+
+.chat-inputarea {
+    display: flex;
+    gap: .5rem;
+    padding: .75rem;
+    background: var(--input-background);
+    border-top: 1px solid var(--border-color);
+    align-items: center;
+}
+
+.textarea-wrap textarea::placeholder {
+    color: var(--input-placeholder)
+}
+
+.textarea-wrap {
+    position: relative;
+    flex: 1
+}
+
+.textarea-wrap textarea {
+    width: 100%;
+    min-height: 3rem;
+    max-height: 8rem;
+    resize: none;
+    overflow-y: hidden;
+    padding: .6rem .9rem;
+    padding-right: 2.4rem;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: .5rem;
+    color: var(--input-color);
+    line-height: 1.3;
+    font-family: inherit;
+    font-size: 1rem;
+}
+
+.emoji-btn {
+    position: absolute;
+    top: .55rem;
+    right: .95rem;
+    width: 1.1rem;
+    height: 1.1rem;
+    border: none;
+    background: none;
+    cursor: pointer;
+    opacity: .6;
+    transition: opacity .15s
+}
+
+.emoji-btn svg {
+    width: 100%;
+    height: 100%;
+    fill: var(--input-color)
+}
+
+.emoji-btn:hover {
+    opacity: 1
+}
+
+.icon-btn {
+    display: grid;
+    place-items: center;
+    width: 2.4rem;
+    height: 2.4rem;
+    border: none;
+    background: none;
+    cursor: pointer;
+    border-radius: .4rem;
+    transition: all .3s ease;
+}
+
+.icon-btn svg {
+    width: 1.6rem;
+    height: 1.6rem;
+    fill: var(--button-main)
+}
+
+.icon-btn:hover {
+    fill: var(--button-main-hover)
+}
+
+.send-btn {
+    background: none
+}
+
+.chat-inputarea {
+    display: flex;
+    gap: .5rem;
+    padding: .75rem;
+    background: var(--input-background);
+    border-top: 1px solid var(--border-color)
+}
+
+.file-list {
+    list-style: none;
+    padding: 0;
+    margin: .5rem 0 0 0;
+    font-size: .85rem
+}
+
+.file-list li {
+    display: flex;
+    align-items: center;
+    gap: .25rem;
+    margin: .15rem 0
+}
+
+.file-list li button {
+    background: none;
+    border: none;
+    font-size: 1rem;
+    cursor: pointer
+}
+
+#uploader {
+    transition: opacity .3s ease;
+}
+
+#uploader[hidden] {
+    display: block;
+    opacity: 0;
+    height: 0;
+    overflow: hidden;
+}
+
+.card {
+    margin-left: 1rem;
+    margin-right: 1rem;
+}
+
+@media (max-width: 480px) {
+    .chat-wrapper {
+        border: none;
+        margin: 0;
+    }
+
+    .msg {
+        max-width: 85%;
+    }
+
+    nav ul {
+        gap: .75rem;
+    }
+}
+
+/* dates */
+
+.chat-date-sep{
+        background: var(--message-left);
+    text-align: center;
+    margin: .5rem auto .25rem;
+    padding: 0.25rem 0.5rem;
+    font-size: .75rem;
+    border-radius: 8px;
+    font-weight: 600;
+    color: #888;
+    position: relative;
+}

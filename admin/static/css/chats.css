@@ -1,0 +1,251 @@
+:root {
+  --font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Ubuntu, Cantarell, sans-serif;
+  --transition-duration: 0.3s;
+  --chats-fab-width: 30px;
+  --chats-fab-height: 80px;
+}
+
+.chats_body {
+  min-width: 320px;
+  overflow-x: hidden;
+  margin: 0;
+  background: var(--background-color);
+  color: var(--content-color);
+  font-family: var(--font-family);
+}
+
+.chats_sidebar {
+  border-right: 1px solid var(--border-color);
+}
+
+/* ---- layout common ---- */
+.chats_layout {
+  height: 100svh;
+  width: clamp(320px, 100vw, 1600px);
+  min-width: 320px;
+  max-width: 1600px;
+  margin: 0 auto;
+  position: relative;
+  background: var(--chat-background);
+  border-left: 1px solid var(--border-color);
+  border-right: 1px solid var(--border-color);
+}
+
+.chats_ctrl svg {
+  width: 20px;
+  height: 20px;
+  fill: var(--header-item);
+}
+
+.chats_panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+.chats_panel__header {
+  flex: 0 0 auto;
+  padding: .5rem .75rem;
+  background: var(--header-background);
+  color: var(--header-item);
+  border-bottom: 1px solid var(--border-color);
+}
+.chats_panel__body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: .75rem;
+}
+
+/* плавающие круглые кнопки */
+.chats_ctrl {
+  position: absolute;
+  width: var(--chats-fab-width);
+  height: var(--chats-fab-height);
+  border-radius: 15px;
+  border: none;
+  background: var(--header-item-active);
+  color: var(--header-item);
+  font-weight: 600;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  cursor: pointer;
+  transition: background .15s;
+}
+.chats_ctrl:hover { background: var(--header-item-active); }
+
+/* хит-зоны для свайпов */
+.chats_edge {
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 16px;
+  z-index: 50;
+  display: none; /* показываем только на мобилке */
+}
+.chats_edge--left  { left: 0; }
+.chats_edge--right { right: 0; }
+
+.chats_tablet_stage,
+.chats_tablet_track {
+  display: contents;
+}
+
+/* ----------- DESKTOP ≥ 1025px ----------- */
+@media (min-width: 1025px) {
+  .chats_layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr 2fr; /* 1/4, 1/4, 1/2 */
+  }
+  .chats_sidebar--1 { grid-column: 1 / 2; }
+  .chats_sidebar--2 { grid-column: 2 / 3; }
+  .chats_main       { grid-column: 3 / 4; }
+
+  /* никаких кнопок */
+  .chats_ctrl { display: none !important; }
+}
+
+/* ----------- TABLET 551–1024px ----------- */
+@media (min-width: 551px) and (max-width: 1024px) {
+  .chats_layout {
+    display: grid;
+    grid-template-columns: 1fr 2fr; /* левый столбец = сайдбар (1 или 2), правый = main */
+  }
+
+  .chats_tablet_stage {
+    display: block;              /* перестаём быть contents */
+    grid-column: 1 / 2;
+    position: relative;
+    overflow: hidden;            /* режем невидимую половину */
+  }
+  .chats_tablet_track {
+    display: flex;               /* две панели рядом */
+    width: 200%;
+    height: 100%;
+    transition: transform var(--transition-duration) ease;
+  }
+  .chats_sidebar {
+    width: 50%;
+    min-width: 50%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* main остаётся справа */
+  .chats_main {
+    grid-column: 2 / 3;
+  }
+
+  /* положение трека (анимация) */
+  .chats_layout[data-active="s1"] .chats_tablet_track { transform: translateX(0%); }
+  .chats_layout[data-active="s2"] .chats_tablet_track { transform: translateX(-50%); }
+
+  /* кнопки: M скрываем, 1/2 рисуем по вашим правилам */
+  .chats_ctrl--main { display: none !important; }
+
+  .chats_ctrl--s2 {
+    /* когда показан s1 — кнопка 2 справа от него (у границы с main) */
+    display: none;
+  }
+  .chats_ctrl--s1 {
+    /* когда показан s2 — кнопка 1 слева (у левой границы экрана) */
+    display: none;
+  }
+
+  .chats_layout[data-active="s1"] .chats_ctrl--s2 {
+    display: flex;
+    left: calc(33.333% - 8px - var(--chats-fab-width) / 2);
+    top: 50%;
+    transform: translate(-50%, -50%);
+  }
+  .chats_layout[data-active="s2"] .chats_ctrl--s1 {
+    display: flex;
+    left: 8px;
+    top: 50%;
+    transform: translate(0, -50%);
+  }
+
+  .chats_edge { display: none; }
+}
+
+/* ----------- MOBILE ≤ 550px ----------- */
+@media (max-width: 550px) {
+  .chats_layout {
+    position: relative;
+    display: block;
+    overflow: hidden;
+    min-width: 320px;
+  }
+
+  .chats_sidebar {
+    border-right: none;
+  }
+
+  .chats_panel {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    transition: transform var(--transition-duration) ease;
+    will-change: transform;
+  }
+
+  /* порядок экранов: s1 (лево) -> s2 (центр) -> main (право) */
+  .chats_layout[data-active="main"] #chats_sidebar_1 { transform: translateX(-200%); }
+  .chats_layout[data-active="main"] #chats_sidebar_2 { transform: translateX(-100%); }
+  .chats_layout[data-active="main"] #chats_main       { transform: translateX(0%);    }
+
+  .chats_layout[data-active="s2"]   #chats_sidebar_1 { transform: translateX(-100%); }
+  .chats_layout[data-active="s2"]   #chats_sidebar_2 { transform: translateX(0%);     }
+  .chats_layout[data-active="s2"]   #chats_main       { transform: translateX(100%);   }
+
+  .chats_layout[data-active="s1"]   #chats_sidebar_1 { transform: translateX(0%);     }
+  .chats_layout[data-active="s1"]   #chats_sidebar_2 { transform: translateX(100%);   }
+  .chats_layout[data-active="s1"]   #chats_main       { transform: translateX(200%);   }
+
+  /* КНОПКИ (показываем контекстно) */
+  .chats_ctrl { display: none; }
+
+  /* main: слева 1 и 2, одна над другой */
+  .chats_layout[data-active="main"] .chats_ctrl--s1 {
+    display: flex; left: 8px; top: calc(50% - 50px); transform: translateY(-50%);
+  }
+  .chats_layout[data-active="main"] .chats_ctrl--s2 {
+    display: flex; left: 8px; top: calc(50% + 50px); transform: translateY(-50%);
+  }
+
+  /* s1: справа 2 и M */
+  .chats_layout[data-active="s1"] .chats_ctrl--s2 {
+    display: flex; right: 8px; top: calc(50% - 50px); transform: translateY(-50%);
+  }
+  .chats_layout[data-active="s1"] .chats_ctrl--main {
+    display: flex; right: 8px; top: calc(50% + 50px); transform: translateY(-50%);
+  }
+
+  /* s2: слева 1, справа M */
+  .chats_layout[data-active="s2"] .chats_ctrl--s1 {
+    display: flex; left: 8px;  top: 50%; transform: translateY(-50%);
+  }
+  .chats_layout[data-active="s2"] .chats_ctrl--main {
+    display: flex; right: 8px; top: 50%; transform: translateY(-50%);
+  }
+
+  /* хит-зоны активны */
+  .chats_edge { display: block; }
+}
+
+.side-item{
+  display:block; padding:.6rem .8rem; cursor:pointer;
+  border-bottom:1px solid #eee; position:relative;
+}
+.side-item:hover{background:#fafafa}
+.side-item .title{font-weight:600}
+.side-item .sub  {font-size:.8rem; color:#666}
+.side-item .badge{
+   position:absolute; right:.6rem; top:50%;
+   transform:translateY(-50%);
+   background:#d33; color:#fff; padding:.1rem .45rem;
+   border-radius:1rem; font-size:.7rem;
+}
+.dim{color:#888; text-align:center; padding:1.5rem 0;}

@@ -1,0 +1,53 @@
+<article class="card editing" id="inst-{{ inst.id }}" data-editing="1">
+    <form id="inst-edit-{{ inst.id }}"
+          hx-put="/instances/{{ inst.id }}"
+          hx-target="#inst-{{ inst.id }}"
+          hx-swap="outerHTML"
+          hx-headers='{"X-CSRF": "{{ request.state.csrf }}"}'>
+
+        <section class="card-body">
+            <div class="form-grid">
+                <div>
+                    <label>Название</label>
+                    <input name="inst_name" value="{% if inst.name %} {{ inst.name }} {% endif %}">
+                    <label>API URL</label>
+                    <input name="api_url" value="{{ inst.api_url }}" required>
+                    <label>MEDIA URL</label>
+                    <input name="media_url" value="{{ inst.media_url }}" required>
+                    <label>API Token</label>
+                    <input name="api_token" value="{{ inst.api_token }}" required>
+                </div>
+
+                <div>
+                    <label>ID Telegram-канала</label>
+                    <input name="tg_id" value="{{ inst.telegram_channel.telegram_id if inst.telegram_channel else '' }}"
+                           inputmode="numeric" pattern="-?[0-9]*" required>
+
+                    <div class="form-row">
+                        <input type="checkbox" id="auto_{{ inst.id }}" name="auto_reply"
+                               class="switch" {{ 'checked' if inst.auto_reply else '' }}>
+                        <label for="auto_{{ inst.id }}">Автоматический ответ</label>
+                    </div>
+
+                    <label>Текст авто-ответа</label>
+                    <textarea name="auto_reply_text"
+                              rows="5">{{ inst.auto_reply_text or '' }}</textarea>
+                </div>
+            </div>
+
+            <div class="form-error" id="edit-errors-{{ inst.id }}"></div>
+        </section>
+
+        <footer class="card-foot">
+            <div class="btn-row">
+                <button type="submit" class="btn main">Обновить данные</button>
+                <button type="button"
+                        class="btn"
+                        hx-get="/instances/{{ inst.id }}/card"
+                        hx-target="#inst-{{ inst.id }}"
+                        hx-swap="outerHTML">Отмена
+                </button>
+            </div>
+        </footer>
+    </form>
+</article>

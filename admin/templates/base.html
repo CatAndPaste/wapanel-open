@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>{% block title %}Dash{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/htmx.org@2.0.0"
+            integrity="sha384-wS5l5IKJBvK6sPTKa2WZ1js3d947pvWXbPJ1OmWfEuxLgeHcEbjUUA5i9V5ZkpCw"
+            crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="/static/css/admin.css">
+    {% block head %}
+    {% endblock %}
+</head>
+<body>
+<header>
+    <nav>
+        <ul>
+            <li><a href="/" class="{{ 'active' if active_page == 'instances' else '' }}">Инстансы</a></li>
+            <li><a href="/users" class="{{ 'active' if active_page == 'users' else '' }}">Пользователи</a></li>
+            <li><a href="/chats" class="{{ 'active' if active_page == 'chats' else '' }}">Чаты</a></li>
+        </ul>
+    </nav>
+    <nav>
+        <ul>
+            <li><a href="/logout" class="btn-danger">Выйти</a></li>
+        </ul>
+    </nav>
+</header>
+<main>
+    {% block content %}{% endblock %}
+</main>
+<footer>
+    <p>WIP | for Art Art</p>
+</footer>
+
+<script>
+document.body.addEventListener("hx-alert", (e) => {
+    alert(e.detail.msg);
+});
+</script>
+<script>
+(function(){
+  document.addEventListener('pointerdown', e => {
+    const opt = e.target;
+    if (opt.tagName !== 'OPTION') return;
+    const select = opt.closest('select.multiselect');
+    if (!select) return;
+
+    e.preventDefault();
+    const scroll = select.scrollTop;
+    opt.selected = !opt.selected;
+    select.focus({ preventScroll:true });
+
+    requestAnimationFrame(() => { select.scrollTop = scroll; });
+  });
+})();
+</script>
+</body>
+</html>

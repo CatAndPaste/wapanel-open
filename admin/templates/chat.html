@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Chat</title>
+  <link rel="stylesheet" href="/static/css/admin.css" />
+
+  <style>
+  /* --- Chat specific --- */
+  .chat-wrapper{
+    display:flex; flex-direction:column;
+    height:100vh;               /* во всю высоту вкладки */
+    width:100%; max-width:900px; margin:0 auto;
+    border:1px solid var(--border-color);
+    background:var(--chat-background);
+  }
+
+  /* список сообщений */
+  .chat-feed{
+    flex:1;
+    overflow-y:auto;
+    padding:1rem;
+    position:relative;
+  }
+  .chat-feed.loading{          /* блокируем скролл во время подгрузки */
+    overflow:hidden;
+  }
+
+  /* оверлей-индикатор */
+  .chat-overlay{
+    position:absolute; inset:0;
+    background:rgba(0,0,0,.55);
+    display:flex; align-items:center; justify-content:center;
+    backdrop-filter:blur(2px);
+    z-index:2;                  /* поверх пузырей */
+  }
+  .chat-overlay.hidden{display:none}
+
+  /* пузырьки */
+  .msg{
+    max-width:66%; margin:.25rem 0;
+    padding:.75rem 1rem; border-radius:1rem;
+    font-size:.95rem; line-height:1.4;
+    word-break:break-word;
+  }
+  .msg-left{background:var(--message-left); color:var(--content-color); border-bottom-left-radius:0}
+  .msg-right{background:var(--message-right); color:var(--content-color); margin-left:auto; border-bottom-right-radius:0}
+
+  /* инпут */
+  .chat-inputarea{
+    display:flex; gap:.5rem; padding:.75rem;
+    background:var(--input-background); border-top:1px solid var(--border-color);
+  }
+  .chat-inputarea input{
+    flex:1; padding:.5rem .75rem;
+    background:transparent; color:var(--input-color);
+    border:1px solid var(--border-color); border-radius:.5rem;
+  }
+  .chat-inputarea input::placeholder{color:var(--input-placeholder)}
+  .chat-inputarea button{
+    padding:.5rem 1.25rem; border:none; border-radius:.5rem;
+    background:var(--button-main); color:var(--content-color); font-weight:600;
+    transition:background var(--transition-duration);
+  }
+  .chat-inputarea button:hover{background:var(--button-main-hover)}
+  </style>
+
+  <script src="https://unpkg.com/htmx.org@2.0.0"
+          integrity="sha384-wS5l5IKJBvK6sPTKa2WZ1js3d947pvWXbPJ1OmWfEuxLgeHcEbjUUA5i9V5ZkpCw"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+
+<div class="chat-wrapper">
+  <!-- FEED -->
+  <main id="feed" class="chat-feed">
+
+    <!-- Сентинел: когда появляется в viewport → тянем историю -->
+    <div
+      id="history-trigger"
+      hx-get="/chat/history?before={{ first_id }}"
+      hx-trigger="revealed"
+      hx-swap="beforebegin"
+      hx-indicator="#loader">
+    </div>
+
+    {#-- Сюда рендерятся текущие N последних сообщений  #}
+    {% for msg in messages %}
+      <div class="msg {{ 'msg-right' if msg.me else 'msg-left' }}">
+        {{ msg.text|safe }}
+      </div>
+    {% endfor %}
+  </main>
+
+  <!-- ОВЕРЛЕЙ-ИНДИКАТОР (htmx-indicator) -->
+  <div id="loader" class="chat-overlay hidden">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
+      <circle cx="12" cy="12" r="10" opacity=".25"></circle>
+      <path d="M22 12a10 10 0 0 1-10 10"></path>
+    </svg>
+  </div>
+
+  <!-- INPUT -->
+  <form id="chat-form" class="chat-inputarea"
+        hx-post="/chat/send"
+        hx-include="[name=msg]"
+        hx-swap="afterend"
+        hx-target="#feed">
+    <input name="msg" type="text" placeholder="Введите сообщение…" autocomplete="off" />
+    <button type="submit">Отправить</button>
+  </form>
+</div>
+
+<script>
+/* ===========================================
+   Сохранение позиции скролла при подгрузке
+   =========================================== */
+const feed       = document.getElementById('feed');
+const sentinel   = document.getElementById('history-trigger');
+const loader     = document.getElementById('loader');
+
+let prevHeight = feed.scrollHeight;
+
+/* когда подгружаем историю — блокируем прокрутку */
+document.body.addEventListener('htmx:beforeOnLoad', (e)=>{
+  if(e.detail.elt === sentinel){
+    feed.classList.add('loading');
+    loader.classList.remove('hidden');
+    prevHeight = feed.scrollHeight;   // запоминаем высоту ПЕРЕД вставкой
+  }
+});
+
+/* после вставки старых сообщений ↴ восстанавливаем прокрутку */
+document.body.addEventListener('htmx:afterSwap', (e)=>{
+  if(e.detail.elt === sentinel){
+    const delta = feed.scrollHeight - prevHeight;
+    feed.scrollTop = delta;          // компенсируем прирост
+    feed.classList.remove('loading');
+    loader.classList.add('hidden');
+  }
+});
+
+/* автоскролл вниз при отправке нового сообщения */
+document.body.addEventListener('htmx:afterSwap', (e)=>{
+  if(e.detail.elt.id === 'chat-form'){   // ответ на POST /chat/send
+    feed.scrollTop = feed.scrollHeight;
+  }
+});
+
+/* сперва прокручиваем вниз к последнему сообщению */
+window.addEventListener('load',()=>{ feed.scrollTop = feed.scrollHeight; });
+</script>
+</body>
+</html>

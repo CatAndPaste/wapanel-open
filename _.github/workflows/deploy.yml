@@ -1,0 +1,56 @@
+name: Deploy Zapchasti Project
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      HOST: ${{ secrets.DEPLOY_SERVER_IP }}
+      USER: ${{ secrets.SERVER_USER }}
+      REMOTE_DIR: /srv/green
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v4
+
+    - name: Start ssh-agent
+      uses: webfactory/ssh-agent@v0.9.0
+      with:
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+    - name: Add known hosts
+      run: echo "${{ secrets.SSH_KNOWN_HOSTS }}" >> ~/.ssh/known_hosts
+
+    - name: Rsync project to server
+      run: |
+        rsync -az --delete \
+          --exclude='**/__pycache__' --exclude='*.py[cod]' \
+          --exclude '.env' \
+          --exclude '.git/' \
+          --exclude 'media/' \
+          --exclude 'logs/' \
+          -e "ssh" ./ ${{ env.USER }}@${{ env.HOST }}:${{ env.REMOTE_DIR }}
+
+    - name: Build & restart containers
+      env:
+        SSH_HOST: ${{ env.HOST }}
+        SSH_USER: ${{ env.USER }}
+      run: |
+        ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST bash -s <<EOF
+          set -euo pipefail
+          cd /srv/green
+    
+          export DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1
+    
+          docker compose pull --ignore-pull-failures green_db || true
+          docker compose build base
+          docker compose build --parallel app admin alembic
+          docker compose stop app admin || true
+          docker compose up --abort-on-container-exit --exit-code-from alembic alembic
+          docker compose up -d --wait app admin
+          docker image prune -f --filter "until=120h"
+        EOF

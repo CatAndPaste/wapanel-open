@@ -1,0 +1,19 @@
+{% for m in messages %}
+    {% include "chat/partials/message_item.html" %}
+
+{% set cur  = m.created_at|hdate %}
+    {% set next = loop.nextitem.created_at|hdate if loop.nextitem else None %}
+    {% if cur != next %}
+        <div style="clear:both"></div>
+        <div class="chat-date-sep">{{ cur }}</div>
+    {% endif %}
+{% endfor %}
+
+{% if messages %}
+  {% set oldest = messages[-1] %}
+  <div id="history-trigger"
+       hx-get="/chat/{{ oldest.instance.api_id }}/{{ oldest.chat_id.split('@')[0] }}{% if '@g.us' in oldest.chat_id %}-g{% endif %}/history?offset={{ offset }}"
+       hx-trigger="intersect once"
+       hx-swap="afterend">
+  </div>
+{% endif %}

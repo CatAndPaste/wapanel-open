@@ -1,0 +1,23 @@
+{% for dlg in dialogs %}
+<a class="dialog-item"
+   hx-get="/chat/{{ inst.api_id }}/{{ dlg.chat_id.split('@')[0] }}"
+   hx-target="#chats_main"
+   hx-push-url="true">
+    <div class="dlg-title">
+        {{ dlg.title or dlg.phone }}
+        {% if dlg.title and dlg.title != dlg.phone %}
+            <span class="dlg-phone">({{ dlg.phone }})</span>
+        {% endif %}
+    </div>
+
+    {% if dlg.last_message %}
+        <div class="dlg-last">{{ dlg.last_message }}</div>
+    {% endif %}
+
+    <div class="dlg-no-tags">Ярлыки: -</div>
+
+    {% if dlg.unread %}
+        <span class="badge">{{ dlg.unread }}</span>
+    {% endif %}
+</a>
+{% endfor %}

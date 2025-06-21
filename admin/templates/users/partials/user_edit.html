@@ -1,0 +1,132 @@
+{% from "macros.html" import csrf %}
+
+{% set cur = request.state.user %}
+{% set manager = can_manage_users or cur.is_owner %}
+{% set can_edit_perms = manager and not u.is_owner %}
+{% set show_inst_ctrls = (cur.full_access or cur.is_owner) and not u.is_owner %}
+
+<article class="card editing" id="user-{{ u.id }}" data-editing="1">
+    <form id="user-edit-{{ u.id }}"
+          hx-put="/users/{{ u.id }}"
+          hx-target="this"
+          hx-swap="outerHTML"
+          hx-headers='{"X-CSRF":"{{ request.state.csrf }}"}'>
+
+        <section class="card-body">
+            <div class="form-grid">
+                <div>
+                    <label style="padding-bottom: 0.5rem;">Основная информация</label>
+                    <p class="sub" style="margin-bottom:0.5rem">
+                    <small>
+                            При изменении данных будет выполнен выход из аккаунта
+                    </small>
+                    </p>
+
+                    <label>Имя пользователя</label>
+                    <input name="username" value="{{ u.username }}" required
+                           {% if u.is_owner and not cur.is_owner %}disabled{% endif %}>
+
+                    <label>Новый пароль</label>
+                    <input type="password" name="password1" autocomplete="new-password" placeholder="•••••">
+
+                    <label>Повторите пароль</label>
+                    <input type="password" name="password2" autocomplete="new-password" placeholder="•••••">
+                    <p class="sub" style="margin-bottom:0.5rem">
+                    <small>
+                            Оставьте поля пустыми, чтобы не менять пароль
+                    </small>
+                    </p>
+
+                    <div class="form-row">
+                        <input type="checkbox" id="tfa_{{ u.id }}" name="is_2fa_enabled"
+                               class="switch"
+                               {{ 'checked' if u.is_2fa_enabled else '' }}
+                        {% if u.is_owner %}disabled{% endif %}>
+                        <label for="tfa_{{ u.id }}">Включить 2FA</label>
+                    </div>
+
+                    <label>Telegram ID</label>
+                    <input name="telegram_id"
+                           value="{{ u.telegram_id or '' }}"
+                           inputmode="numeric" pattern="-?[0-9]*">
+                </div>
+
+                <div>
+                    {% if can_edit_perms %}
+                    <label style="margin-bottom:0.5rem">Права</label>
+                    <div class="form-row">
+                        <input type="checkbox" id="perm_u_{{u.id}}" name="can_manage_users"
+                               class="switch" {{ 'checked' if u.can_manage_users else '' }}>
+                        <label for="perm_u_{{u.id}}">Управление пользователями</label>
+                    </div>
+
+                    {% if show_inst_ctrls %}
+                    <div class="form-row">
+                        <input type="checkbox" id="perm_i_{{u.id}}" name="can_manage_instances"
+                               class="switch" {{ 'checked' if u.can_manage_instances else '' }}>
+                        <label for="perm_i_{{u.id}}">Управление инстансами</label>
+                    </div>
+                    {% endif %}
+                    {% endif %}
+
+                    {% if show_inst_ctrls %}
+                    <div class="form-row" style="margin-top:1rem">
+                        <input type="checkbox" id="fa_{{u.id}}" name="full_access"
+                               class="switch" {{ 'checked' if u.full_access else '' }}>
+                        <label for="fa_{{u.id}}">Доступ ко всем инстансам</label>
+                    </div>
+                    <p class="sub" style="margin-bottom:0.5rem">
+                        <small>
+                            Даёт пользователю доступ ко всем существующим и будущим инстансам
+                        </small>
+                    </p>
+                    <label>Доступные инстансы</label>
+                    <select name="instance_ids" multiple size="6" class="multiselect">
+                        {% for inst in instances %}
+                        <option title="{% if inst.name %}{{ inst.name }} - ID {% endif %}{{ inst.api_id }} {% if inst.phone %} ({{ inst.phone }}) {% else %} ({{ inst.state.value }}) {% endif %}" value="{{ inst.id }}"
+                                {% if inst in u.instances %}selected{% endif %}>
+                            {% if inst.name %}{{ inst.name }} - ID {% endif %}
+                            {{ inst.api_id }}
+                            {% if inst.phone %}
+                            ({{ inst.phone }})
+                            {% else %}
+                            ({{ inst.state.value }})
+                            {% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <p class="sub">
+                        <small>
+                            Не имеет эффекта, если у пользователя есть полный доступ
+                        </small>
+                    </p>
+
+                    {% if has_foreign_access %}
+                    <p class="sub" style="margin-bottom:0.5rem">
+                        <small>
+                            Обратите внимание: у пользователя есть доступ к инстансам,
+                            которыми вы не управляете.
+                        </small>
+                    </p>
+                    {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="form-error" id="edit-errors-{{ u.id }}"></div>
+        </section>
+
+        <footer class="card-foot">
+            <div class="btn-row">
+                <button type="submit" class="btn main">Сохранить</button>
+                <button type="button"
+                        class="btn"
+                        hx-get="/users/{{ u.id }}/card"
+                        hx-target="#user-{{ u.id }}"
+                        hx-swap="outerHTML">
+                    Отмена
+                </button>
+            </div>
+        </footer>
+    </form>
+</article>

@@ -1,0 +1,14 @@
+{% macro input(name, ph, type="text", value="") -%}
+<input type="{{type}}" name="{{name}}" class="form-control"
+       placeholder="{{ph}}" value="{{value}}" required>
+{%- endmacro %}
+
+{% macro badge(state) -%}
+<span class="badge bg-{{ 'success' if state=='authorized' else 'error' if state=='unknown' else 'info' }}">
+    {{ state }}
+</span>
+{%- endmacro %}
+
+{% macro csrf(request) -%}
+  <input type="hidden" name="csrf" value="{{ request.state.csrf }}">
+{%- endmacro %}

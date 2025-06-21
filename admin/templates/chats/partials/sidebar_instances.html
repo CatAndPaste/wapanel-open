@@ -1,0 +1,20 @@
+{% for inst, unread in inst_items %}
+<a class="side-item"
+   hx-get="/chats/sidebar/{{ inst.api_id }}/dialogs"
+   hx-target="#chats_sidebar_2 .chats_panel__body"
+   hx-swap="innerHTML"
+   hx-push-url="true">
+    <div class="title">
+        {{ inst.name or inst.api_id }}
+    </div>
+    <div class="sub">
+        {% if inst.name %}ID:&nbsp;{{ inst.api_id }}{% endif %}
+    </div>
+
+    {% if unread %}
+      <span class="badge">{{ unread }}</span>
+    {% endif %}
+</a>
+{% else %}
+<p class="dim">Инстансов нет</p>
+{% endfor %}

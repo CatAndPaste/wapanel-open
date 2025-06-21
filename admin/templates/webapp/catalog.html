@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <title>Каталог</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    body{font-family:system-ui;margin:0;padding:10px;}
+    table{width:100%;border-collapse:collapse;}
+    th,td{padding:6px 4px;border-bottom:1px solid #ddd;font-size:14px;}
+    th{background:#f8f8f8;text-align:left;}
+    input.qty{width:48px;text-align:center;margin-left:4px;}
+    tfoot td{text-align:right;padding-top:12px;}
+    button{padding:8px 20px;border:0;border-radius:8px;background:#28a745;color:#fff;font-size:15px;}
+  </style>
+</head>
+<body>
+
+<h3>Выберите позиции</h3>
+<form id="order-form" onsubmit="return false">
+  <table>
+    <thead>
+      <tr><th></th><th>Название</th><th>Бренд</th><th>Цена</th><th>Наличие</th></tr>
+    </thead>
+    <tbody>
+    {% for it in items %}
+      <tr>
+        <td>
+          <input type="checkbox" data-item-id="{{ it.id }}">
+          <input class="qty" type="number" min="1" value="1">
+        </td>
+        <td>{{ it.title }}</td>
+        <td>{{ it.brand or '' }}</td>
+        <td>{{ "%.0f ₽"|format(it.price or 0) }}</td>
+        <td>{{ it.delivery or 'в наличии' }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr><td colspan="5"><button id="send-btn">Отправить заказ</button></td></tr>
+    </tfoot>
+  </table>
+</form>
+
+<script>
+const tg = window.Telegram.WebApp; tg.expand();
+
+document.getElementById('send-btn').onclick = async () =>{
+  const rows = [...document.querySelectorAll('tbody tr')];
+  const items = rows.flatMap(r=>{
+      const cb = r.querySelector('input[type=checkbox]');
+      if(!cb.checked) return [];
+      return [{
+        item_id:  +cb.dataset.itemId,
+        quantity: +r.querySelector('input.qty').value || 1
+      }];
+  });
+  if(!items.length){alert('Выберите хотя бы один товар');return;}
+
+  const res = await fetch('/api/order', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({
+      initData: tg.initData,
+      offer_id: {{ offer_id }},
+      items
+    })
+  });
+  const data = await res.json();
+  if(data.ok){
+    tg.showAlert('Заказ №'+data.order_id+' создан!');
+    tg.close();
+  }else{
+    tg.showAlert('Ошибка: '+(data.detail||data.error));
+  }
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,4 @@
+FROM green-base:latest
+WORKDIR /app
+COPY alembic.ini .
+COPY alembic ./alembic

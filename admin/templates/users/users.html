@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% from "macros.html" import csrf %}
+
+{% block title %}Пользователи{% endblock %}
+
+{% block content %}
+{# ─────────────────────  ФОРМА «Новый пользователь»  ───────────────────── #}
+{% if can_manage_users %}
+<details class="instance-form">
+    <summary>Новый пользователь</summary>
+
+    <form id="add-user-form"
+          hx-post="/users"
+          hx-target="#user-errors"
+          hx-swap="innerHTML">
+
+        <div class="form-grid">
+            <div>
+                <label>Имя пользователя</label>
+                <input name="username" required>
+
+                <label>Пароль</label>
+                <input type="password" name="password1" autocomplete="new-password" required>
+
+                <label>Повторите пароль</label>
+                <input type="password" name="password2" autocomplete="new-password" required>
+
+                <label>Telegram ID (для 2FA)</label>
+                <input name="telegram_id" inputmode="numeric" pattern="-?[0-9]*">
+
+                <div class="form-row" style="margin-top:.5rem">
+                    <input type="checkbox"
+                           id="tfa"
+                           name="is_2fa_enabled"
+                           class="switch"
+                           checked>
+                    <label for="tfa">Включить 2FA</label>
+                </div>
+            </div>
+
+            <div>
+                <label>Права</label>
+
+                <div class="form-row">
+                    <input type="checkbox"
+                           id="perm_users"
+                           name="can_manage_users"
+                           class="switch">
+                    <label for="perm_users">Управление пользователями</label>
+                </div>
+
+                {% if cur.full_access or cur.is_owner %}
+                <div class="form-row">
+                    <input type="checkbox"
+                           id="perm_insts"
+                           name="can_manage_instances"
+                           class="switch">
+                    <label for="perm_insts">Управление инстансами</label>
+                </div>
+                {% endif %}
+
+                <div class="form-row" style="margin-top:.5rem">
+                    <input type="checkbox"
+                           id="full_access"
+                           name="full_access"
+                           class="switch">
+                    <label for="full_access">Доступ ко всем инстансам</label>
+                </div>
+                <p class="sub" style="margin-bottom:0.5rem">
+                    <small>
+                        Даёт пользователю доступ ко всем существующим и будущим инстансам
+                    </small>
+                </p>
+
+                <label style="margin-top:.5rem">Доступные инстансы</label>
+                <select name="instance_ids" multiple size="6" class="multiselect">
+                    {% for inst in instances %}
+                    <option title="{% if inst.name %}{{ inst.name }} - ID {% endif %}{{ inst.api_id }}{% if inst.phone %} ({{ inst.phone }}) {% else %} ({{ inst.state.value }}) {% endif %}" value="{{ inst.id }}">
+                        {% if inst.name %}{{ inst.name }} - ID {% endif %}
+                        {{ inst.api_id }}
+                        {% if inst.phone %}
+                        ({{ inst.phone }})
+                        {% else %}
+                        ({{ inst.state.value }})
+                        {% endif %}
+                    </option>
+                    {% endfor %}
+                </select>
+                <p class="sub" style="margin-bottom:0.5rem">
+                    <small>
+                        Не имеет эффекта, если у пользователя есть полный доступ
+                    </small>
+                </p>
+            </div>
+        </div>
+
+        {{ csrf(request) }}
+        <div id="user-errors" class="form-error"></div>
+        <button class="btn main" type="submit">Создать</button>
+    </form>
+</details>
+{% endif %}
+
+<div id="users-list">
+    {% if users %}
+    {% for u in users %}
+    {% include "users/partials/user_article.html" %}
+    {% else %}
+    <p>—</p>
+    {% endfor %}
+    {% else %}
+    <p>Пользователей нет. Вы не должны видеть этот текст O.O</p>
+    {% endif %}
+</div>
+<script>
+    (() => {
+        // ---------- helpers ----------
+        const list = document.getElementById('users-list');
+
+        function wsFail(msg = 'Не удалось подключиться к WebSocket, обновите страницу') {
+            alert(msg);
+        }
+
+        // ---------- websocket ----------
+        const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+        const ws = new WebSocket(`${proto}://${location.host}/ws/users`);
+
+        ws.addEventListener('error', () => wsFail());
+        ws.addEventListener('close', () => wsFail());
+
+        ws.addEventListener('message', async ev => {
+            const {action, id} = JSON.parse(ev.data);
+            const box = document.getElementById(`user-${id}`);
+
+            if (box && box.dataset.editing === '1' && action !== 'delete')
+                return;
+
+            if (action === 'delete') {
+                box?.remove();
+                if (String(id) === document.body.dataset.me) location.reload();
+                return;
+            }
+
+            const resp = await fetch(`/users/${id}/card`);
+            if (resp.status === 404) {
+                box?.remove();
+                return;
+            }
+            if (!resp.ok) return;
+
+            const html = await resp.text();
+            if (action === 'insert') {
+                list.insertAdjacentHTML('afterbegin', html);
+            } else {
+                if (box) box.outerHTML = html;
+                else list.insertAdjacentHTML('afterbegin', html);
+            }
+            htmx.process(document.getElementById(`user-${id}`));
+        });
+    })();
+</script>
+{% endblock %}

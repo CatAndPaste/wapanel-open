@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Новый чат{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 480px; margin-left:auto; margin-right: auto;">
+    <h3 style="margin-bottom:1rem">Новый чат</h3>
+
+    <form action="/chat/{{ inst.api_id }}/new" method="post"
+          style="display:flex; gap:.5rem; max-width:480px; flex-wrap:wrap">
+
+        <input name="phone" type="text" required
+               placeholder="Введите номер телефона без «+»"
+               autocomplete="off"
+               style="flex:1 1 200px; padding:.5rem 1rem;
+                  border:1px solid var(--border-color);
+                  border-radius:.4rem; min-width:0">
+
+        <button type="submit" class="btn main"
+                style="padding:.55rem 1.2rem">Создать
+        </button>
+    </form>
+</div>
+{% endblock %}

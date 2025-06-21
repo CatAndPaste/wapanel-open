@@ -1,0 +1,310 @@
+{% extends "base.html" %}
+{% from "macros.html" import badge, csrf %}
+
+{% block title %}Инстансы{% endblock %}
+
+{% block content %}
+{# ---------- ФОРМА «добавить инстанс» (свернута) ---------- #}
+{% if is_manager %}
+<details class="instance-form">
+    <summary>Новый инстанс</summary>
+    <form id="add-inst-form" hx-post="/instances/create" hx-target="#inst-errors" hx-swap="innerHTML">
+        <div class="form-grid">
+            <div>
+                <label>Данные API</label>
+                <small class="hint" style="margin-top: 0.25rem;">
+                    Можно получить в <a target="_blank" href="https://console.green-api.com/">личном кабинете</a> Green
+                    API
+                </small>
+                <label>ID (Instance API ID)</label>
+                <input name="api_id" type="text" autocomplete="on" inputmode="numeric" pattern="-?[0-9]*" required>
+                <label>API URL</label>
+                <input name="api_url" required>
+                <label>MEDIA URL</label>
+                <input name="media_url" required>
+                <label>API Token</label>
+                <input name="api_token" required>
+            </div>
+
+            <div>
+                <label>Название</label>
+                <input name="inst_name">
+                <label>ID Telegram-канала</label>
+                <input name="tg_id" type="text" autocomplete="on" inputmode="numeric" pattern="-?[0-9]*" required
+                       placeholder="Напр. -1002898031044">
+                {% if bot and bot.is_active and bot.username %}
+                <small class="hint">
+                    Чтобы узнать ID канала — пригласите в него бота
+                    <a target="_blank" href="https://t.me/{{ bot.username }}">@{{ bot.username }}</a>
+                </small>
+                {% endif %}
+                <div class="form-row">
+                    <input type="checkbox" id="download_history" name="download_history" class="switch">
+                    <label for="download_history">Скачать историю сообщений</label>
+                </div>
+                <div class="form-row">
+                    <input type="checkbox" id="auto_reply" name="auto_reply" class="switch">
+                    <label for="auto_reply">Автоматический ответ</label>
+                </div>
+                <label>Текст авто-ответа</label>
+                <div class="textarea-wrap">
+                <textarea id="auto_reply_textarea"
+                          name="auto_reply_text"
+                          rows="8"></textarea>
+                    <button type="button" id="emoji-btn" class="emoji-btn" aria-label="Emoji">
+                        <svg class="svg-inline--fa fa-face-smile" aria-hidden="true" focusable="false" data-prefix="far"
+                             data-icon="face-smile" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"
+                             data-fa-i2svg="">
+                            <path fill="currentColor"
+                                  d="M464 256A208 208 0 1 0 48 256a208 208 0 1 0 416 0zM0 256a256 256 0 1 1 512 0A256 256 0 1 1 0 256zm177.6 62.1C192.8 334.5 218.8 352 256 352s63.2-17.5 78.4-33.9c9-9.7 24.2-10.4 33.9-1.4s10.4 24.2 1.4 33.9c-22 23.8-60 49.4-113.6 49.4s-91.7-25.5-113.6-49.4c-9-9.7-8.4-24.9 1.4-33.9s24.9-8.4 33.9 1.4zM144.4 208a32 32 0 1 1 64 0 32 32 0 1 1 -64 0zm192-32a32 32 0 1 1 0 64 32 32 0 1 1 0-64z"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- сам пикер (скрыт по умолчанию) -->
+                <emoji-picker id="emoji-picker" hidden></emoji-picker>
+            </div>
+        </div>
+        {{ csrf(request) }}
+        <div id="inst-errors" class="form-error"></div>
+        <button class="btn main" type="submit">Добавить</button>
+    </form>
+</details>
+{% endif %}
+
+{# ---------- СПИСОК КАРТОЧЕК ---------- #}
+{% for inst in instances %}
+{% include "instances/partials/instance_article.html" %}
+{% else %}
+<p style="padding: 1rem 1.25rem;">Инстансов пока нет.</p>
+{% endfor %}
+
+<div id="qr-backdrop" hidden>
+    <div id="qr-box">
+        <button id="qr-close" aria-label="Close">✕</button>
+        <div id="qr-content">
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import "https://cdn.skypack.dev/emoji-picker-element@^1";
+
+    const textarea = document.querySelector('#auto_reply_textarea');
+    const picker = document.querySelector('#emoji-picker');
+    const btn = document.querySelector('#emoji-btn');
+
+    /* 1) Вставка эмодзи + закрытие пикера */
+    picker.addEventListener('emoji-click', ev => {
+        const emoji = ev.detail.unicode;
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+
+        textarea.value = textarea.value.slice(0, start)
+            + emoji
+            + textarea.value.slice(end);
+
+        // подвинуть курсор
+        textarea.focus();
+        textarea.selectionEnd = start + emoji.length;
+
+        // сразу закрыть
+        hidePicker();
+    });
+
+    /* 2) Клик по кнопке открывает/закрывает */
+    btn.addEventListener('click', e => {
+        e.stopPropagation();
+        togglePicker();
+    });
+
+    /* 3) ESC закрывает */
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') hidePicker();
+    });
+
+    /* 4) Клик вне пикера + вне кнопки + вне textarea закрывает */
+    document.addEventListener('click', e => {
+        if (picker.hidden) return;
+
+        // используем composedPath чтобы поймать shadow-DOM элементов
+        const path = e.composedPath();
+        if (
+            !path.includes(picker) &&
+            !path.includes(btn) &&
+            !path.includes(textarea)
+        ) {
+            hidePicker();
+        }
+    });
+
+    function togglePicker() {
+        picker.hidden ? showPicker() : hidePicker();
+    }
+
+    function showPicker() {
+        // позиционируем над textarea
+        const r = textarea.getBoundingClientRect();
+        picker.style.position = 'absolute';
+        picker.hidden = false;
+    }
+
+    function hidePicker() {
+        picker.hidden = true;
+    }
+</script>
+
+<script>
+    const ws = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws/instances`);
+    const list = document.getElementById('instances-list');
+
+    let wsErrorShown = false;
+    function wsFail(msg='Не удалось установить соединение с WebSocket, пожалуйста обновите страницу') {
+        if (!wsErrorShown) {
+            alert(msg);
+            wsErrorShown = true;
+        }
+    }
+
+    ws.addEventListener('error', () => wsFail());
+    ws.addEventListener('close', () => wsFail());
+
+    ws.addEventListener('message', async (ev) => {
+        const {action, id} = JSON.parse(ev.data);
+        const box = document.getElementById(`inst-${id}`);
+
+        if (box && box.dataset.editing === "1" && action !== 'delete') {
+            console.debug('Skip hot-update for inst', id, ': editing in progress');
+            return;
+        }
+
+        if (box && box.dataset.editing === "1" && action === 'delete') {
+            if (!confirm(`Инстанс был удалён во время редактирования.\nЗакрыть форму?`)) return;
+        }
+
+        if (action === 'delete') {
+            box?.remove();
+            return;
+        }
+
+        const resp = await fetch(`/instances/${id}/card`);
+        if (!resp.ok) return;
+
+        const html = await resp.text();
+        if (action === 'insert') {
+            list.insertAdjacentHTML('afterbegin', html);
+            htmx.process(document.getElementById(`inst-${id}`));
+        } else {            // update
+            if (box) box.outerHTML = html;
+            else list.insertAdjacentHTML('afterbegin', html);
+            htmx.process(document.getElementById(`inst-${id}`));
+        }
+    });
+
+    ws.addEventListener('close', () => console.log('WS closed'));
+    ws.addEventListener('error', () => console.log('WS error'));
+</script>
+
+<script>
+    // -- util helpers --------------------------------------------------------
+    const $ = s => document.querySelector(s);
+    const $$ = s => document.querySelectorAll(s);
+
+    // current modal state
+    let pollingId = null;        // setInterval id
+    let currentInst = null;
+
+    // open modal – called from button click ----------------------------------
+    window.openQrModal = async (btn) => {
+        const instId = +btn.dataset.inst;
+        const wasAuth = btn.dataset.authorized === '1';
+        currentInst = instId;
+
+        if (wasAuth) {
+            const ok = confirm(`Вы действительно хотите выйти для получения QR?`);
+            if (!ok) return;
+        }
+
+        showModal("Получаю QR-код, пожалуйста подождите…");
+
+        try {
+            if (wasAuth) {
+                showModal("Выходим из аккаунта…");
+                await fetch(`/instances/${instId}/logout`, {
+                    method: "POST",
+                    headers: {"X-CSRF": "{{ request.state.csrf }}"}
+                });
+            }
+        } catch (e) {
+            showModal("Ошибка при выходе: " + e);
+            return;
+        }
+        // start 1-second polling
+        pollQr(instId);
+    };
+
+    // polling loop -----------------------------------------------------------
+    async function pollQr(instId) {
+        clearInterval(pollingId);
+        const tick = async () => {
+            try {
+                const r = await fetch(`/instances/${instId}/qr`);
+                if (!r.ok) {
+                    showModal("Ошибка сети");
+                    return;
+                }
+                const js = await r.json();
+                switch (js.status) {
+                    case "qr":
+                        showModal(`<img src="${js.image}" style="width:100%;height:auto">`);
+                        break;
+                    case "already_logged":
+                        hideModal();
+                        break;
+                    case "timeout":
+                        showModal("Срок действия QR-кода истёк, обновляю...");
+                        break;
+                    default:
+                        showModal("Ошибка: " + (js.message || 'unknown'));
+                }
+            } catch (e) {
+                showModal("Ошибка: " + e);
+            }
+        };
+        await tick();
+        pollingId = setInterval(tick, 1000);
+    }
+
+    // modal show / hide ------------------------------------------------------
+    function showModal(html) {
+        $('#qr-content').innerHTML = html;
+        $('#qr-backdrop').hidden = false;
+    }
+
+    function hideModal() {
+        $('#qr-backdrop').hidden = true;
+        $('#qr-content').innerHTML = "";
+        clearInterval(pollingId);
+        pollingId = null;
+        currentInst = null;
+    }
+
+    // Close actions
+    document.onkeydown = (e) => {
+        if (e.key === "Escape") hideModal();
+    };
+    $('#qr-close').onclick = hideModal;
+    $('#qr-backdrop').onclick = (e) => {
+        if (e.target.id === 'qr-backdrop') hideModal()
+    };
+
+    ws.addEventListener('message', ev => {
+        if (!currentInst) return;
+        const {action, id} = JSON.parse(ev.data);
+        if (id == currentInst && action === "update") {
+            const st = document.querySelector(`#inst-${id} .state-dot`);
+            if (st && st.classList.contains('success')) hideModal();
+        }
+    });
+</script>
+{% endblock %}

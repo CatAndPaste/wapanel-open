@@ -1,0 +1,12 @@
+<div id="form-container">
+    {% if error %}
+    <p style="color: #c1121f; max-width: 400px;">{{ error|safe }}</p>
+    {% endif %}
+    <form class="auth-form" hx-post="/2fa" hx-target="#form-container" hx-swap="innerHTML" hx-on:htmx:after-request="this.reset()">
+        <label for="code">Введите 2FA-код:</label>
+        <input type="text" name="code" id="code" required>
+        <input type="hidden" name="next" value="{{ next }}">
+        <br>
+        <button type="submit">Проверить</button>
+    </form>
+</div>

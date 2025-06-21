@@ -1,0 +1,53 @@
+<div id="msg-{{ m.id }}" class="msg {{ _cls(m) }}" data-date="{{ m.created_at|hdate }}" data-ts="{{ m.created_at.timestamp()|int }}">
+
+  {# ========== 1. Контент ========== #}
+  {% if m.files %}
+      {% for f in m.files %}
+
+        {# ─── 1.1  IMAGE ──────────────── #}
+        {% if f.file_type.name == "image" %}
+            <img src="{{ f.file_url }}"
+                 alt="{{ f.name }}"
+                 style="max-width:100%;height:auto;margin-bottom:.5rem;border-radius:8px;">
+
+        {# ─── 1.2  VIDEO ──────────────── #}
+        {% elif f.file_type.name == "video" %}
+            <video controls
+                   style="max-width:100%;height:auto;margin-bottom:.5rem;border-radius:8px;">
+                <source src="{{ f.file_url }}" type="{{ f.mime }}">
+                Ваш браузер не поддерживает тег <code>video</code>.
+            </video>
+
+        {# ─── 1.3  AUDIO ──────────────── #}
+        {% elif f.file_type.name == "audio" %}
+            <audio controls
+                   style="width:100%;margin-bottom:.5rem;border-radius:8px;">
+                <source src="{{ f.file_url }}" type="{{ f.mime }}">
+                Ваш браузер не поддерживает тег <code>audio</code>.
+            </audio>
+
+        {# ─── 1.4  OTHER  (скачать) ───── #}
+        {% else %}
+            <a href="/download/{{ f.id }}" download>{{ f.name }} – Скачать</a><br>
+        {% endif %}
+
+      {% endfor %}
+
+      {# ─── подпись (текст) ──────────────────────── #}
+      {% if m.text %}
+          <div style="margin-top:.25rem;white-space:pre-wrap;">{{ m.text|e }}</div>
+      {% endif %}
+
+  {# ========== 2. Только текст ========== #}
+  {% else %}
+      <div style="white-space:pre-wrap;">{{ (m.text or '')|e }}</div>
+  {% endif %}
+
+  {# ========== 3. Время + статус ========== #}
+  <div style="font-size:.75rem;opacity:.6;margin-top:.25rem;">
+      {{ m.created_at|localtime }}
+      {% if m.direction == MessageDirection.out %}
+          &nbsp;{{ m.status.value }}
+      {% endif %}
+  </div>
+</div>

@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>{% if instance.name %}{{ instance.name }}{% else %}{{ instance.api_id }}{% endif %} – {{ phone }}</title>
+    <link rel="stylesheet" href="/static/css/admin.css">
+    <script src="https://unpkg.com/htmx.org@2.0.0"
+            integrity="sha384-wS5l5IKJBvK6sPTKa2WZ1js3d947pvWXbPJ1OmWfEuxLgeHcEbjUUA5i9V5ZkpCw"
+            crossorigin="anonymous"></script>
+    <link href="https://unpkg.com/filepond@^4/dist/filepond.css" rel="stylesheet">
+    <script src="https://unpkg.com/filepond@^4/dist/filepond.js"></script>
+</head>
+<body>
+
+<div class="chat-wrapper">
+    <header>
+        <span>{% if instance.name %}{{ instance.name }}{% else %}{{ instance.api_id }}{% endif %}</span>
+        <span style="margin-left: auto;">{{ phone }}</span>
+    </header>
+    <main id="feed" class="chat-feed">
+        {% include "chat/partials/message_list.html" %}
+    </main>
+
+    <form id="chat-form"
+      action="/chat/{{ instance.api_id }}/{{ phone }}/send"
+      class="chat-inputarea">
+
+        <div class="textarea-wrap">
+            <textarea id="msg-box"
+                      name="msg"
+                      rows="1"
+                      placeholder="Введите сообщение…"
+                      autocomplete="off"></textarea>
+
+            <!-- кнопка-эмодзи (абсолютно позиционирована) -->
+            <button type="button" id="emoji-btn" class="emoji-btn" title="Emoji">
+                <svg viewBox="0 0 512 512">
+                    <path
+                            d="M464 256A208 208 0 1 0 48 256a208 208 0 1 0 416 0zM0
+               256a256 256 0 1 1 512 0A256 256 0 1 1 0
+               256zm177.6 62.1C192.8 334.5 218.8 352 256
+               352s63.2-17.5 78.4-33.9c9-9.7 24.2-10.4
+               33.9-1.4s10.4 24.2 1.4
+               33.9c-22 23.8-60 49.4-113.6
+               49.4s-91.7-25.5-113.6-49.4c-9-9.7-8.4-24.9
+               1.4-33.9s24.9-8.4
+               33.9 1.4zM144.4 208a32 32 0 1 1 64
+               0 32 32 0 1 1 -64 0zm192-32a32 32 0 1 1 0
+               64 32 32 0 1 1 0-64z"></path>
+                </svg>
+            </button>
+        </div>
+
+        <button type="button" class="icon-btn attach-btn" id="attach-btn" title="Прикрепить файл">
+            <!-- paper-clip -->
+            <svg viewBox="0 0 448 512" aria-hidden="true">
+                <path
+                        d="M364.2 83.8c-24.4-24.4-64-24.4-88.4 0l-184 184c-42.1 42.1-42.1 110.3
+               0 152.4s110.3 42.1 152.4 0l152-152c10.9-10.9 28.7-10.9 39.6
+               0s10.9 28.7 0 39.6l-152 152c-64 64-167.6 64-231.6
+               0s-64-167.6 0-231.6l184-184c46.3-46.3 121.3-46.3
+               167.6 0s46.3 121.3 0 167.6l-176 176c-28.6 28.6-75 28.6-103.6
+               0s-28.6-75 0-103.6l144-144c10.9-10.9 28.7-10.9 39.6 0s10.9
+               28.7 0 39.6l-144 144c-6.7 6.7-6.7 17.7 0 24.4s17.7
+               6.7 24.4 0l176-176c24.4-24.4 24.4-64 0-88.4z"/>
+            </svg>
+        </button>
+
+        <button type="submit" class="icon-btn send-btn" id="send-btn" title="Отправить">
+            <!-- paper-plane -->
+            <svg viewBox="0 0 512 512" aria-hidden="true">
+                <path
+                        d="M57.6 35.8C23.1 20.6-11.3 57.4 6.1 90.9l63
+               121.2c4.4 8.4 12.6 14.1 22 15.3L266
+               249.3c3.4.4 6 3.3 6 6.7s-2.6 6.3-6
+               6.7L91.1 284.6c-9.4 1.2-17.6 6.9-22
+               15.3L6.1 421.1c-17.4 33.5 17 70.2 51.6
+               55.1L492.9 285.3c25.5-11.2 25.5-47.4
+               0-58.6L57.6 35.8z"/>
+            </svg>
+        </button>
+    </form>
+
+    <!-- emoji-picker элемент (скрыт) -->
+    <emoji-picker id="emoji-picker" hidden></emoji-picker>
+    <div id="uploader" hidden>
+    <input id="file-input" type="file" name="files" class="filepond" multiple hidden></div>
+</div>
+
+{% include "chat/script.html" %}
+</body>
+</html>
+
+<script>
+    const feed = document.getElementById("feed");
+    const apiId = {{ instance.api_id }};
+    const chatId = "{{ chat_id }}";
+    const pageSize = {{ page_size }};
+    let offsetVal = {{ offset }};
+
+    function refreshTrigger() {
+        const trg = document.getElementById("history-trigger");
+        if (!trg) return;
+        trg.setAttribute(
+            "hx-get",
+            `/chat/${apiId}/${chatId.split('@')[0]}${chatId.endsWith('@g.us') ? '-g' : ''}`
+            + `/history?offset=${offsetVal}`
+        );
+    }
+
+    /* прибавляем pageSize после успеха подгрузки истории */
+    document.body.addEventListener("htmx:afterOnLoad", ev => {
+        if (ev.detail.requestConfig.elt.id === "history-trigger") {
+            offsetVal += pageSize;
+            refreshTrigger();                            // на всякий случай
+        }
+    });
+
+    /* ─── WebSocket ───────────────────────────────────────────── */
+    const wsUrl = `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws/chat/${apiId}/${encodeURIComponent(chatId)}`;
+    const ws = new WebSocket(wsUrl);
+
+    let wsErrShown = false;
+
+    function wsFail(msg) {
+        if (!wsErrShown) {
+            alert(msg);
+            wsErrShown = true;
+        }
+    }
+
+    ws.addEventListener("error", () => wsFail("Ошибка WebSocket, перезагрузите страницу"));
+    ws.addEventListener("close", () => wsFail("Подключение WebSocket закрыто"));
+
+    ws.addEventListener("message", async ev => {
+        const {action, id} = JSON.parse(ev.data);
+        const box = document.getElementById(`msg-${id}`);
+
+    /* ── удаление ───────────────────────── */
+    if(action==='delete'){
+            if(box){
+                box.remove();
+                offsetVal=Math.max(0,offsetVal-1);
+                refreshTrigger();
+            }
+            return;
+    }
+
+    /* --- insert / update ------------------------------------------------ */
+    /* ─ 1. «insert», но сообщение уже существует — значит это повтор; пропускаем */
+    if(action==='insert' && box) return;
+
+    const resp = await fetch(`/chat/{{ instance.api_id }}/{{ phone }}/item/${id}`);
+    if(!resp.ok) return;
+    const html = await resp.text();
+
+    if(action==='insert'){
+        feed.insertAdjacentHTML('afterbegin', html);
+        const newBox = feed.firstElementChild;
+        rebuildSeps();
+        offsetVal++;  refreshTrigger();
+    }else if(action==='update' && box && box.parentNode){
+        /* outerHTML только если элемент реально
+           привязан к DOM — иначе предыдущая ошибка */
+        box.outerHTML = html;
+    }
+    });
+</script>
+
+<script type="module">
+import "https://cdn.skypack.dev/emoji-picker-element@^1";
+
+/* ---------- FilePond --------------------------------------------------- */
+const pond = FilePond.create(
+    document.querySelector('#file-input'),
+    {
+        allowMultiple : true,
+        storeAsFile   : true,
+        labelIdle     : 'Перетащите или <span class="filepond--label-action">выберите</span> файлы',
+        credits       : false
+    }
+);
+
+const uploader = document.getElementById('uploader');
+uploader.hidden = true;
+
+/* ---------- textarea auto-grow + Enter behaviour ---------------------- */
+const box   = document.getElementById('msg-box');
+const form  = document.getElementById('chat-form');
+const sBtn  = document.getElementById('send-btn');
+const isTouch = window.matchMedia("(pointer:coarse)").matches;
+
+function autoGrow(){
+    box.style.height = 'auto';
+    box.style.height = (box.scrollHeight || 20) + 'px';
+}
+box.addEventListener('input', () => { autoGrow(); validate(); });
+autoGrow();
+
+/* Shift+Enter = перенос, Enter = отправка */
+box.addEventListener('keydown', e => {
+    if(isTouch) return;
+    if (e.key === 'Enter' && !e.shiftKey){
+        e.preventDefault();
+        if (sBtn.disabled) return;
+        form.requestSubmit();
+    }
+});
+
+const attachBtn = document.getElementById('attach-btn');
+
+/* ---------- attach button --------------------------------------------- */
+attachBtn.addEventListener('click', () => {
+    /* переключаем видимость */
+    uploader.hidden = !uploader.hidden;
+
+    /* если теперь открыт — сразу открываем диалог выбора */
+    if (!uploader.hidden) {
+        pond.browse();
+    }
+});
+
+/* ---------- send-button enable/disable -------------------------------- */
+function validate(){
+    const txt  = box.value.trim().length > 0;
+    const fls  = pond.getFiles().length > 0;
+    sBtn.disabled = !(txt || fls);
+}
+pond.on('updatefiles', validate);
+validate();
+
+/* ---------- submit ----------------------------------------------------- */
+form.addEventListener('submit', async ev => {
+    ev.preventDefault();
+
+    const data = new FormData();
+    data.append('msg', box.value);
+
+    pond.getFiles().forEach(f => {
+    data.append('files', f.file, f.file.name);
+});
+
+    const r = await fetch(form.action, { method:'POST', body:data });
+
+    if (!r.ok){
+        alert('Ошибка отправки');
+        return;
+    }
+
+    /* очистка UI */
+    box.value = '';          autoGrow();
+    pond.removeFiles();
+    validate();
+
+    uploader.hidden = true;
+});
+
+const emojiBtn   = document.getElementById('emoji-btn');
+const picker     = document.getElementById('emoji-picker');
+const textarea   = document.getElementById('msg-box');
+picker.hidden = true;
+
+emojiBtn.addEventListener('click', e=>{
+    e.stopPropagation();
+    togglePicker();
+});
+
+picker.addEventListener('emoji-click', e=>{
+    const emo = e.detail.unicode;
+    const {selectionStart:pos} = box;
+    box.setRangeText(emo, pos, pos, 'end');
+    box.dispatchEvent(new Event('input'));
+    hidePicker();
+});
+
+document.addEventListener('keydown', e=>{
+    if(e.key==='Escape') hidePicker();
+});
+
+document.addEventListener('click', e=>{
+    if(picker.hidden) return;
+    const path = e.composedPath();
+    if(!path.includes(picker) && !path.includes(emojiBtn) && !path.includes(box)){
+        hidePicker();
+    }
+});
+
+function togglePicker(){ picker.hidden ? showPicker() : hidePicker(); }
+
+function showPicker(){
+    const r = form.getBoundingClientRect();
+    picker.style.position = 'fixed';
+    picker.style.right    = '${r.right}px';
+    picker.style.bottom   = `${window.innerHeight - r.top + 8}px`;
+    picker.hidden = false;
+}
+
+function hidePicker(){ picker.hidden = true; }
+
+function rebuildSeps () {
+  // 1) убираем старые
+  document.querySelectorAll('.chat-date-sep').forEach(e => e.remove());
+
+  // 2) пробегаем все сообщения сверху‑вниз (DOM‑порядок = новые → старые)
+  let cur = null;
+  const nodes = [...feed.children];            // моментальный snapshot
+  nodes.forEach((el, i) => {
+    if (!el.classList.contains('msg')) return; // пропускаем non‑message блоки
+    const lbl = el.dataset.date;
+
+    // при смене даты «закрываем» предыдущую группу — SEP ставится ПЕРЕД el
+    if (cur !== null && lbl !== cur) {
+      const clr = document.createElement('div');
+      clr.style.clear = 'both';
+
+      const sep = document.createElement('div');
+      sep.className  = 'chat-date-sep';
+      sep.textContent = cur;
+
+      feed.insertBefore(clr, el);
+      feed.insertBefore(sep, el);
+    }
+
+    cur = lbl;
+  });
+
+  // 3) завершаем самую нижнюю (визуально верхнюю) группу
+  if (cur !== null) {
+    const clr = document.createElement('div');
+    clr.style.clear = 'both';
+
+    const sep = document.createElement('div');
+    sep.className  = 'chat-date-sep';
+    sep.textContent = cur;
+
+    feed.appendChild(clr);
+    feed.appendChild(sep);
+  }
+}
+
+document.body.addEventListener('htmx:afterSwap', ev=>{
+  if (ev.detail.target.id === 'history-trigger'){
+      rebuildSeps();
+      offsetVal += pageSize;
+      refreshTrigger();
+  }
+});
+</script>
+

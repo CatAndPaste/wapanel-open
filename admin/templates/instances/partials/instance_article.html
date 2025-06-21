@@ -1,0 +1,142 @@
+{% from "macros.html" import badge, csrf %}
+
+<article class="card" id="inst-{{ inst.id }}">
+
+    <section class="card-head">
+        {# left #}
+        {% set color = 'success' if inst.state.value=='authorized'
+        else 'danger' if inst.state.value=='unknown'
+        else 'warning' %}
+        <div class="card-head__left">
+        <span class="card-head__name">{% if inst.name %} {{ inst.name }} {% else %}Instance {{ inst.api_id }} {% endif %}
+        </span>
+            <div>
+                <span class="state-dot {{ color }}"></span>
+                {{ badge(inst.state.value if inst.state.value!='unknown' else 'Недоступен') }}
+                (
+                <a class="help" target="_blank"
+                   href="https://green-api.com/en/docs/api/recommendations/instance-status-tracking/">?</a>
+                )
+                {# right #}
+            </div>
+        </div>
+        <span class="api-id">API ID: {{ inst.api_id }}</span>
+    </section>
+
+    <section class="card-body">
+        <p><b>Номер телефона:</b> {{ inst.phone or '--' }}</p>
+
+        {# Канал #}
+        {% if inst.telegram_channel %}
+        {% if inst.telegram_channel.is_active %}
+        <p><b>Канал:</b>
+            {% if inst.telegram_channel.url and inst.telegram_channel.name %}
+            <a target="_blank" href="{{ inst.telegram_channel.url }}">
+                @{{ inst.telegram_channel.name }}
+            </a>
+            {% else %}
+            --</p>
+        {% endif %}
+        {% else %}
+        <p class="danger">
+            Канал недоступен.
+            {% if bot and bot.is_active and bot.username %}
+            Добавьте в него бота
+            <a target="_blank" href="https://t.me/{{ bot.username }}">@{{ bot.username }}</a>
+            {% endif %}
+        </p>
+        {% endif %}
+        {% else %}
+        <p><b>Канал:</b> --</p>
+        {% endif %}
+        {% if inst.auto_reply %}
+        <p>
+            <b>Авто-ответ: </b>
+            {{ inst.auto_reply_text or '—' }}
+        </p>
+        {% else %}
+        <p>
+            <b>Авто-ответ: </b>
+            <span class="text-muted">выключен</span>
+        </p>
+        {% endif %}
+    </section>
+
+    {% if is_manager %}
+    <section class="card-body secret">
+        <h4>Данные API</h4>
+        <p class="sub">
+            Можно получить в <a target="_blank" href="https://console.green-api.com/">личном кабинете</a> Green API
+        </p>
+        <p>ID: {{ inst.api_id }}</p>
+        <p>API URL: {{ inst.api_url }}</p>
+        <p>MEDIA URL: {{ inst.media_url }}</p>
+        <p>
+            API Token:
+            {{ inst.api_token[:2] }}••••{{ inst.api_token[-4:] }}
+        </p>
+    </section>
+    <section class="card-foot">
+        <div class="btn-row">
+            <a class="btn"
+               hx-post="/instances/{{ inst.id }}/refresh"
+               hx-target="body"
+               hx-swap="none"
+               hx-headers='{"X-CSRF": "{{ request.state.csrf }}"}'>
+                Обновить
+            </a>
+            <a href="#"
+               class="btn"
+               data-inst="{{ inst.id }}"
+               data-authorized="{{ '1' if inst.state.value=='authorized' else '0' }}"
+               onclick="openQrModal(this)">
+                Войти с QR
+            </a>
+            <div class="btn-row">
+                <a href="#"
+                   class="btn danger {{ '' if inst.state.value=='authorized' else 'disabled' }}"
+                   {% if inst.state.value=='authorized' %}
+                   hx-post="/instances/{{ inst.id }}/logout"
+                   hx-headers='{"X-CSRF": "{{ request.state.csrf }}"}'
+                   hx-target="body"
+                   hx-swap="none"
+                   hx-confirm="Вы действительно хотите выйти?"
+                   {% else %}
+                   tabindex="-1" aria-disabled="true"
+                   {% endif %}
+                >Разлогинить</a>
+            </div>
+        </div>
+        <div class="btn-row">
+            <a class="btn"
+               hx-get="/instances/{{ inst.id }}/edit"
+               hx-target="#inst-{{ inst.id }}"
+               hx-swap="outerHTML"
+               hx-headers='{"X-CSRF": "{{ request.state.csrf }}"}'>
+                Редактировать
+            </a>
+            {% if inst.state.value == 'authorized' %}
+            <a class="btn"
+               hx-post="/instances/{{ inst.id }}/history"
+               hx-headers='{"X-CSRF": "{{ request.state.csrf }}"}'
+               hx-target="body"
+               hx-swap="none">
+                Скачать историю
+            </a>
+            {% else %}
+            <a class="btn disabled" tabindex="-1" aria-disabled="true">
+                Скачать историю
+            </a>
+            {% endif %}
+            <a class="btn danger"
+               hx-delete="/instances/{{ inst.id }}"
+               hx-target="body"
+               hx-swap="none"
+               hx-headers='{"X-CSRF": "{{ request.state.csrf }}"}'
+               hx-confirm="Вы действительно хотите удалить инстанс {{ inst.api_id }} и все его данные?">
+                Удалить
+            </a>
+        </div>
+    </section>
+    {% endif %}
+</article>
